@@ -1,0 +1,31 @@
+package com.grupo10.measurement_service.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.Data;
+import jakarta.persistence.Column;
+
+@Data
+@Entity
+@Table(name = "tb_medicion_glucosa")
+public class Glucosa {
+
+    @Id
+    @Column(name = "id_control")
+    private Long idControl;
+
+    @Column(name = "glucosa")
+    private int nivelGlucosa;
+
+    @Column(name = "periodo")
+    private String periodo;
+    
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "id_control")
+    private ControlSalud controlSalud;
+}
