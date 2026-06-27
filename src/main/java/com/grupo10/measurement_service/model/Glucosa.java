@@ -8,6 +8,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 @Data
 @Entity
@@ -21,8 +23,9 @@ public class Glucosa {
     @Column(name = "glucosa")
     private int nivelGlucosa;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "periodo")
-    private String periodo;
+    private PeriodoGlucosa periodo;
     
     @OneToOne
     @MapsId

@@ -28,8 +28,8 @@ public class GlucosaService {
         if (request.getGlucosa() <= 0) {
             throw new BusinessLogicException("El nivel de glucosa debe ser mayor que cero");
         }
-        if (request.getPeriodo() == null || request.getPeriodo().isBlank()) {
-            throw new BusinessLogicException("El periodo de medición es obligatorio");
+        if (request.getPeriodo() == null) {
+            throw new BusinessLogicException("El periodo de medición es obligatorio. Valores válidos: AYUNAS, POSTPRANDIAL, NOCTURNA, ALEATORIO");
         }
 
         ControlSalud controlPadre = controlSaludService.crearControl(
@@ -59,10 +59,6 @@ public class GlucosaService {
         }
         List<Glucosa> historial = glucosaRepository
                 .findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(idPaciente);
-        if (historial.isEmpty()) {
-            throw new ResourceNotFoundException(
-                    "No se encontraron registros de glucosa para el paciente con ID: " + idPaciente);
-        }
         return historial.stream().map(this::mapearAResponse).toList();
     }
 
@@ -79,11 +75,10 @@ public class GlucosaService {
 
     @Transactional
     public void eliminar(Long idControl) {
-        if (!glucosaRepository.existsById(idControl)) {
-            throw new ResourceNotFoundException(
-                    "No se encontró medición de glucosa con ID: " + idControl);
-        }
-        glucosaRepository.deleteById(idControl);
+        Glucosa glucosa = glucosaRepository.findById(idControl)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró medición de glucosa con ID: " + idControl));
+        glucosaRepository.delete(glucosa);
     }
 
     private GlucosaResponseDto mapearAResponse(Glucosa medicion) {

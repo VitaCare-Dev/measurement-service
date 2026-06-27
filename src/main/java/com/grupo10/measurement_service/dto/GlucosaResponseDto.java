@@ -1,5 +1,6 @@
 package com.grupo10.measurement_service.dto;
 
+import com.grupo10.measurement_service.model.PeriodoGlucosa;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -10,5 +11,5 @@ public class GlucosaResponseDto {
     private LocalDateTime fechaHora;
     private String notas;
     private Integer glucosa;
-    private String periodo;
+    private PeriodoGlucosa periodo;
 }

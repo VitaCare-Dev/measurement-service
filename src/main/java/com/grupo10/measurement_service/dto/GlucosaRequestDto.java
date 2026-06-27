@@ -1,5 +1,6 @@
 package com.grupo10.measurement_service.dto;
 
+import com.grupo10.measurement_service.model.PeriodoGlucosa;
 import lombok.Data;
 
 @Data
@@ -8,6 +9,6 @@ public class GlucosaRequestDto {
     private String notas;
 
     private int glucosa;
-    private String periodo;
+    private PeriodoGlucosa periodo;
 
 }
