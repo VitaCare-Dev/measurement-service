@@ -67,10 +67,6 @@ public class LipidosService {
         }
         List<Lipidos> historial = lipidosRepository
                 .findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(idPaciente);
-        if (historial.isEmpty()) {
-            throw new ResourceNotFoundException(
-                    "No se encontraron registros de lípidos para el paciente con ID: " + idPaciente);
-        }
         return historial.stream().map(this::mapearAResponse).toList();
     }
 
@@ -87,11 +83,10 @@ public class LipidosService {
 
     @Transactional
     public void eliminar(Long idControl) {
-        if (!lipidosRepository.existsById(idControl)) {
-            throw new ResourceNotFoundException(
-                    "No se encontró medición de lípidos con ID: " + idControl);
-        }
-        lipidosRepository.deleteById(idControl);
+        Lipidos lipidos = lipidosRepository.findById(idControl)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró medición de lípidos con ID: " + idControl));
+        lipidosRepository.delete(lipidos);
     }
 
     private LipidosResponseDto mapearAResponse(Lipidos medicion) {

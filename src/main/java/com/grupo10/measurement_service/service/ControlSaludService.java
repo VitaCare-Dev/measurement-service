@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import com.grupo10.measurement_service.exception.BusinessLogicException;
-import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.repository.ControlSaludRepository;
 
@@ -36,13 +35,7 @@ public class ControlSaludService {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
         }
 
-        List<ControlSalud> historial = controlSaludRepository.findByIdPacienteOrderByFechaHoraDesc(idPaciente);
-
-        if (historial.isEmpty()) {
-            throw new ResourceNotFoundException("No se encontró historial para el paciente con ID: " + idPaciente);
-        }
-
-        return historial;
+        return controlSaludRepository.findByIdPacienteOrderByFechaHoraDesc(idPaciente);
     }
 
 }

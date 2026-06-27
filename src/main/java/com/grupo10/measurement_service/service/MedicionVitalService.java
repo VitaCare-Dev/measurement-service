@@ -68,10 +68,6 @@ public class MedicionVitalService {
         }
         List<MedicionVitales> historial = medicionVitalesRepository
                 .findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(idPaciente);
-        if (historial.isEmpty()) {
-            throw new ResourceNotFoundException(
-                    "No se encontraron registros de signos vitales para el paciente con ID: " + idPaciente);
-        }
         return historial.stream().map(this::mapearAResponse).toList();
     }
 
@@ -88,11 +84,10 @@ public class MedicionVitalService {
 
     @Transactional
     public void eliminar(Long idControl) {
-        if (!medicionVitalesRepository.existsById(idControl)) {
-            throw new ResourceNotFoundException(
-                    "No se encontró medición vital con ID: " + idControl);
-        }
-        medicionVitalesRepository.deleteById(idControl);
+        MedicionVitales vital = medicionVitalesRepository.findById(idControl)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró medición vital con ID: " + idControl));
+        medicionVitalesRepository.delete(vital);
     }
 
     private MedicionVitalResponseDto mapearAResponse(MedicionVitales medicion) {
