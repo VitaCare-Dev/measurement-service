@@ -10,6 +10,11 @@ import com.grupo10.measurement_service.dto.ErrorResponseDto;
 
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Manejador global de excepciones para el microservicio.
+ * Intercepta las excepciones lanzadas por los controladores y las transforma
+ * en respuestas HTTP estructuradas con el código de estado y mensaje apropiados.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

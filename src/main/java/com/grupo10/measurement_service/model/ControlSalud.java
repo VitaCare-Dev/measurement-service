@@ -11,6 +11,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+/**
+ * Entidad que representa un control de salud.
+ * Actúa como registro padre de todas las mediciones médicas del paciente
+ * (glucosa, lípidos y signos vitales), almacenando los datos comunes
+ * como el identificador del paciente, la fecha del registro y las notas clínicas.
+ */
 @Data
 @Entity
 @Table(name = "tb_control_salud")

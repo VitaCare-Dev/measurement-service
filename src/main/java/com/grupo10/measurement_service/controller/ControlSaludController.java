@@ -8,8 +8,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador REST para la consulta del historial de controles de salud.
+ * Permite obtener todos los registros de salud asociados a un paciente,
+ * independientemente del tipo de medición.
+ */
 @RestController
-@RequestMapping("/api/controls") 
+@RequestMapping("/api/controls")
 public class ControlSaludController {
 
     private final ControlSaludService controlSaludService;
@@ -18,10 +23,17 @@ public class ControlSaludController {
         this.controlSaludService = controlSaludService;
     }
 
+    /**
+     * Obtiene el historial completo de controles de salud de un paciente,
+     * ordenado de más reciente a más antiguo.
+     *
+     * @param idPaciente identificador del paciente
+     * @return lista de controles de salud del paciente con estado HTTP 200 OK
+     */
     @GetMapping("/patient/{idPaciente}")
     public ResponseEntity<List<ControlSalud>> obtenerHistorialPaciente(@PathVariable Long idPaciente) {
         List<ControlSalud> historial = controlSaludService.obtenerHistorialPorPaciente(idPaciente);
         return new ResponseEntity<>(historial, HttpStatus.OK);
-        
+
     }
 }

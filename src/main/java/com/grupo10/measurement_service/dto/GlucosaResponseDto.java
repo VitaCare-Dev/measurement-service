@@ -4,6 +4,9 @@ import com.grupo10.measurement_service.model.PeriodoGlucosa;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * DTO de salida con los datos de una medición de glucosa registrada.
+ */
 @Data
 public class GlucosaResponseDto {
     private Long idControl;

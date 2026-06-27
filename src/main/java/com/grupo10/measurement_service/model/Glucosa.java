@@ -11,6 +11,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 
+/**
+ * Entidad que representa una medición de glucosa.
+ * Se relaciona con {@link ControlSalud} mediante una relación uno a uno,
+ * compartiendo el mismo identificador como clave primaria.
+ */
 @Data
 @Entity
 @Table(name = "tb_medicion_glucosa")

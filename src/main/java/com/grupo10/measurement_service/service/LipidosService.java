@@ -12,6 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Servicio para la gestión de mediciones de lípidos.
+ * Contiene la lógica de negocio para registrar, consultar y eliminar
+ * perfiles lipídicos, vinculándolos a un control de salud padre.
+ */
 @Service
 public class LipidosService {
 
@@ -23,6 +28,14 @@ public class LipidosService {
         this.controlSaludService = controlSaludService;
     }
 
+    /**
+     * Registra un nuevo perfil lipídico para un paciente.
+     * Crea un control de salud padre antes de persistir la medición.
+     *
+     * @param request datos del perfil lipídico incluyendo colesterol total, LDL, HDL y triglicéridos
+     * @return el perfil lipídico registrado como DTO de respuesta
+     * @throws BusinessLogicException si cualquier valor del perfil es menor o igual a cero
+     */
     @Transactional
     public LipidosResponseDto registrarLipidos(LipidosRequestDto request) {
         if (request.getColesterolTotal() <= 0) {
@@ -54,6 +67,13 @@ public class LipidosService {
         return mapearAResponse(guardado);
     }
 
+    /**
+     * Obtiene un registro de lípidos por su identificador.
+     *
+     * @param idControl identificador del control de salud
+     * @return el perfil lipídico como DTO de respuesta
+     * @throws ResourceNotFoundException si no existe un registro con el ID indicado
+     */
     public LipidosResponseDto obtenerPorId(Long idControl) {
         Lipidos lipidos = lipidosRepository.findById(idControl)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -61,6 +81,14 @@ public class LipidosService {
         return mapearAResponse(lipidos);
     }
 
+    /**
+     * Obtiene el historial de perfiles lipídicos de un paciente,
+     * ordenado de más reciente a más antiguo.
+     *
+     * @param idPaciente identificador del paciente
+     * @return lista de perfiles lipídicos; lista vacía si el paciente no tiene registros
+     * @throws BusinessLogicException si el ID del paciente es nulo
+     */
     public List<LipidosResponseDto> obtenerHistorialPorPaciente(Long idPaciente) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
@@ -70,6 +98,14 @@ public class LipidosService {
         return historial.stream().map(this::mapearAResponse).toList();
     }
 
+    /**
+     * Obtiene el perfil lipídico más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return el último perfil lipídico registrado
+     * @throws BusinessLogicException    si el ID del paciente es nulo
+     * @throws ResourceNotFoundException si el paciente no tiene registros de lípidos
+     */
     public LipidosResponseDto obtenerUltimoPorPaciente(Long idPaciente) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
@@ -81,6 +117,12 @@ public class LipidosService {
         return mapearAResponse(lipidos);
     }
 
+    /**
+     * Elimina un registro de lípidos por su identificador.
+     *
+     * @param idControl identificador del control de salud a eliminar
+     * @throws ResourceNotFoundException si no existe un registro con el ID indicado
+     */
     @Transactional
     public void eliminar(Long idControl) {
         Lipidos lipidos = lipidosRepository.findById(idControl)

@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador REST para la gestión de mediciones de signos vitales.
+ * Expone endpoints para registrar, consultar y eliminar registros de presión arterial,
+ * temperatura y peso de pacientes.
+ */
 @RestController
 @RequestMapping("/api/vitals")
 public class MedicionVitalController {
@@ -19,6 +24,12 @@ public class MedicionVitalController {
         this.medicionVitalService = medicionVitalService;
     }
 
+    /**
+     * Registra una nueva medición de signos vitales para un paciente.
+     *
+     * @param request datos de la medición vital a registrar
+     * @return la medición registrada con estado HTTP 201 Created
+     */
     @PostMapping
     public ResponseEntity<MedicionVitalResponseDto> registrarMedicionVital(
             @RequestBody MedicionVitalRequestDto request) {
@@ -26,21 +37,46 @@ public class MedicionVitalController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    /**
+     * Obtiene una medición de signos vitales por su identificador.
+     *
+     * @param idControl identificador del control de salud asociado
+     * @return la medición vital encontrada con estado HTTP 200 OK
+     */
     @GetMapping("/{idControl}")
     public ResponseEntity<MedicionVitalResponseDto> obtenerPorId(@PathVariable Long idControl) {
         return ResponseEntity.ok(medicionVitalService.obtenerPorId(idControl));
     }
 
+    /**
+     * Obtiene el historial completo de signos vitales de un paciente,
+     * ordenado de más reciente a más antiguo.
+     *
+     * @param idPaciente identificador del paciente
+     * @return lista de mediciones vitales del paciente con estado HTTP 200 OK
+     */
     @GetMapping("/patient/{idPaciente}")
     public ResponseEntity<List<MedicionVitalResponseDto>> obtenerHistorialPorPaciente(@PathVariable Long idPaciente) {
         return ResponseEntity.ok(medicionVitalService.obtenerHistorialPorPaciente(idPaciente));
     }
 
+    /**
+     * Obtiene la medición de signos vitales más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return la última medición vital registrada con estado HTTP 200 OK
+     */
     @GetMapping("/patient/{idPaciente}/latest")
     public ResponseEntity<MedicionVitalResponseDto> obtenerUltimoPorPaciente(@PathVariable Long idPaciente) {
         return ResponseEntity.ok(medicionVitalService.obtenerUltimoPorPaciente(idPaciente));
     }
 
+    /**
+     * Elimina una medición de signos vitales por su identificador.
+     *
+     * @param idControl identificador del control de salud a eliminar
+     * @return respuesta vacía con estado HTTP 204 No Content
+     */
     @DeleteMapping("/{idControl}")
     public ResponseEntity<Void> eliminar(@PathVariable Long idControl) {
         medicionVitalService.eliminar(idControl);

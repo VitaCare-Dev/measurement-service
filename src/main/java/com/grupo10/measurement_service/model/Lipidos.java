@@ -9,6 +9,12 @@ import jakarta.persistence.OneToOne;
 import lombok.Data;
 import jakarta.persistence.Table;
 
+/**
+ * Entidad que representa un perfil lipídico.
+ * Almacena los valores de colesterol total, LDL, HDL y triglicéridos.
+ * Se relaciona con {@link ControlSalud} mediante una relación uno a uno,
+ * compartiendo el mismo identificador como clave primaria.
+ */
 @Data
 @Entity
 @Table(name = "tb_medicion_lipidemia")

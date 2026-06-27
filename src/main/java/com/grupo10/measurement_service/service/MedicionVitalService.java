@@ -12,6 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Servicio para la gestión de mediciones de signos vitales.
+ * Contiene la lógica de negocio para registrar, consultar y eliminar mediciones
+ * de presión arterial, temperatura y peso, vinculándolas a un control de salud padre.
+ */
 @Service
 public class MedicionVitalService {
 
@@ -24,6 +29,14 @@ public class MedicionVitalService {
         this.controlSaludService = controlSaludService;
     }
 
+    /**
+     * Registra una nueva medición de signos vitales para un paciente.
+     * Crea un control de salud padre antes de persistir la medición.
+     *
+     * @param request datos de la medición incluyendo presión sistólica, diastólica, temperatura y peso
+     * @return la medición registrada como DTO de respuesta
+     * @throws BusinessLogicException si cualquier valor es nulo o menor o igual a cero
+     */
     @Transactional
     public MedicionVitalResponseDto registrarMedicionVital(MedicionVitalRequestDto request) {
         if (request.getPresionSistolica() == null || request.getPresionSistolica() <= 0) {
@@ -55,6 +68,13 @@ public class MedicionVitalService {
         return mapearAResponse(guardado);
     }
 
+    /**
+     * Obtiene una medición de signos vitales por su identificador.
+     *
+     * @param idControl identificador del control de salud
+     * @return la medición vital como DTO de respuesta
+     * @throws ResourceNotFoundException si no existe una medición con el ID indicado
+     */
     public MedicionVitalResponseDto obtenerPorId(Long idControl) {
         MedicionVitales vital = medicionVitalesRepository.findById(idControl)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -62,6 +82,14 @@ public class MedicionVitalService {
         return mapearAResponse(vital);
     }
 
+    /**
+     * Obtiene el historial de mediciones de signos vitales de un paciente,
+     * ordenado de más reciente a más antiguo.
+     *
+     * @param idPaciente identificador del paciente
+     * @return lista de mediciones vitales; lista vacía si el paciente no tiene registros
+     * @throws BusinessLogicException si el ID del paciente es nulo
+     */
     public List<MedicionVitalResponseDto> obtenerHistorialPorPaciente(Long idPaciente) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
@@ -71,6 +99,14 @@ public class MedicionVitalService {
         return historial.stream().map(this::mapearAResponse).toList();
     }
 
+    /**
+     * Obtiene la medición de signos vitales más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return la última medición vital registrada
+     * @throws BusinessLogicException    si el ID del paciente es nulo
+     * @throws ResourceNotFoundException si el paciente no tiene registros de signos vitales
+     */
     public MedicionVitalResponseDto obtenerUltimoPorPaciente(Long idPaciente) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
@@ -82,6 +118,12 @@ public class MedicionVitalService {
         return mapearAResponse(vital);
     }
 
+    /**
+     * Elimina una medición de signos vitales por su identificador.
+     *
+     * @param idControl identificador del control de salud a eliminar
+     * @throws ResourceNotFoundException si no existe una medición con el ID indicado
+     */
     @Transactional
     public void eliminar(Long idControl) {
         MedicionVitales vital = medicionVitalesRepository.findById(idControl)

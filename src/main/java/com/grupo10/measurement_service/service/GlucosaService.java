@@ -12,6 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Servicio para la gestión de mediciones de glucosa.
+ * Contiene la lógica de negocio para registrar, consultar y eliminar
+ * mediciones de glucosa, vinculándolas a un control de salud padre.
+ */
 @Service
 public class GlucosaService {
 
@@ -23,6 +28,15 @@ public class GlucosaService {
         this.controlSaludService = controlSaludService;
     }
 
+    /**
+     * Registra una nueva medición de glucosa para un paciente.
+     * Crea un control de salud padre antes de persistir la medición.
+     *
+     * @param request datos de la medición incluyendo nivel de glucosa y periodo
+     * @return la medición registrada como DTO de respuesta
+     * @throws BusinessLogicException si el nivel de glucosa es menor o igual a cero,
+     *                                o si el periodo de medición es nulo
+     */
     @Transactional
     public GlucosaResponseDto registrarGlucosa(GlucosaRequestDto request) {
         if (request.getGlucosa() <= 0) {
@@ -46,6 +60,13 @@ public class GlucosaService {
         return mapearAResponse(glucosaGuardada);
     }
 
+    /**
+     * Obtiene una medición de glucosa por su identificador.
+     *
+     * @param idControl identificador del control de salud
+     * @return la medición de glucosa como DTO de respuesta
+     * @throws ResourceNotFoundException si no existe una medición con el ID indicado
+     */
     public GlucosaResponseDto obtenerPorId(Long idControl) {
         Glucosa glucosa = glucosaRepository.findById(idControl)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -53,6 +74,14 @@ public class GlucosaService {
         return mapearAResponse(glucosa);
     }
 
+    /**
+     * Obtiene el historial de mediciones de glucosa de un paciente,
+     * ordenado de más reciente a más antiguo.
+     *
+     * @param idPaciente identificador del paciente
+     * @return lista de mediciones de glucosa; lista vacía si el paciente no tiene registros
+     * @throws BusinessLogicException si el ID del paciente es nulo
+     */
     public List<GlucosaResponseDto> obtenerHistorialPorPaciente(Long idPaciente) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
@@ -62,6 +91,14 @@ public class GlucosaService {
         return historial.stream().map(this::mapearAResponse).toList();
     }
 
+    /**
+     * Obtiene la medición de glucosa más reciente de un paciente.
+     *
+     * @param idPaciente identificador del paciente
+     * @return la última medición de glucosa registrada
+     * @throws BusinessLogicException    si el ID del paciente es nulo
+     * @throws ResourceNotFoundException si el paciente no tiene registros de glucosa
+     */
     public GlucosaResponseDto obtenerUltimoPorPaciente(Long idPaciente) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
@@ -73,6 +110,12 @@ public class GlucosaService {
         return mapearAResponse(glucosa);
     }
 
+    /**
+     * Elimina una medición de glucosa por su identificador.
+     *
+     * @param idControl identificador del control de salud a eliminar
+     * @throws ResourceNotFoundException si no existe una medición con el ID indicado
+     */
     @Transactional
     public void eliminar(Long idControl) {
         Glucosa glucosa = glucosaRepository.findById(idControl)

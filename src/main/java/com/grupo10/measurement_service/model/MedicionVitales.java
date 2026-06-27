@@ -10,6 +10,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 
+/**
+ * Entidad que representa una medición de signos vitales.
+ * Almacena presión arterial sistólica y diastólica, temperatura corporal y peso.
+ * Se relaciona con {@link ControlSalud} mediante una relación uno a uno,
+ * compartiendo el mismo identificador como clave primaria.
+ */
 @Data
 @Entity
 @Table(name = "tb_medicion_vitales")
