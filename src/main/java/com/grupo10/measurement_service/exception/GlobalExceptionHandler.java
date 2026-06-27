@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import com.grupo10.measurement_service.dto.ErrorResponseDto;
 
@@ -37,6 +38,24 @@ public class GlobalExceptionHandler {
         error.setStatus(HttpStatus.BAD_REQUEST.value());
         error.setTimestamp(LocalDateTime.now());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDto> handleMalformedJson(HttpMessageNotReadableException ex) {
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setMessage("El cuerpo de la solicitud es inválido o está mal formado");
+        error.setStatus(HttpStatus.BAD_REQUEST.value());
+        error.setTimestamp(LocalDateTime.now());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex) {
+        ErrorResponseDto error = new ErrorResponseDto();
+        error.setMessage("Ocurrió un error interno en el servidor");
+        error.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        error.setTimestamp(LocalDateTime.now());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 }
