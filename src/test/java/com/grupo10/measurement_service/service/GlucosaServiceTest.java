@@ -7,12 +7,16 @@ import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.Glucosa;
 import com.grupo10.measurement_service.model.PeriodoGlucosa;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.repository.GlucosaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -110,31 +114,55 @@ class GlucosaServiceTest {
     }
 
     @Test
-    void obtenerHistorialPorPaciente_IdNulo_LanzaBusinessLogicException() {
-        assertThrows(BusinessLogicException.class, () -> glucosaService.obtenerHistorialPorPaciente(null));
+    void obtenerHistorialPaginado_IdNulo_LanzaBusinessLogicException() {
+        Pageable pageable = PageRequest.of(0, 10);
+        assertThrows(BusinessLogicException.class,
+                () -> glucosaService.obtenerHistorialPaginado(null, null, null, pageable));
     }
 
     @Test
-    void obtenerHistorialPorPaciente_ListaVacia_RetornaVacia() {
-        when(glucosaRepository.findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(1L))
-                .thenReturn(Collections.emptyList());
+    void obtenerHistorialPaginado_SinRegistros_RetornaPaginaVacia() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(glucosaRepository.buscarHistorialPaginado(1L, null, null, pageable))
+                .thenReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
 
-        List<GlucosaResponseDto> resultado = glucosaService.obtenerHistorialPorPaciente(1L);
+        PageResponseDto<GlucosaResponseDto> resultado =
+                glucosaService.obtenerHistorialPaginado(1L, null, null, pageable);
 
-        assertTrue(resultado.isEmpty());
+        assertTrue(resultado.getContent().isEmpty());
+        assertEquals(0, resultado.getTotalElements());
+        assertEquals(0, resultado.getTotalPages());
     }
 
     @Test
-    void obtenerHistorialPorPaciente_ConRegistros_RetornaLista() {
+    void obtenerHistorialPaginado_ConRegistros_RetornaPaginaConContenido() {
         ControlSalud control = crearControl();
         Glucosa glucosa = crearGlucosa(control);
-        when(glucosaRepository.findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(1L))
-                .thenReturn(List.of(glucosa));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(glucosaRepository.buscarHistorialPaginado(1L, null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(glucosa), pageable, 1));
 
-        List<GlucosaResponseDto> resultado = glucosaService.obtenerHistorialPorPaciente(1L);
+        PageResponseDto<GlucosaResponseDto> resultado =
+                glucosaService.obtenerHistorialPaginado(1L, null, null, pageable);
 
-        assertEquals(1, resultado.size());
-        assertEquals(95, resultado.get(0).getGlucosa());
+        assertEquals(1, resultado.getContent().size());
+        assertEquals(95, resultado.getContent().get(0).getGlucosa());
+        assertEquals(1, resultado.getTotalElements());
+        assertEquals(0, resultado.getPage());
+        assertEquals(10, resultado.getSize());
+    }
+
+    @Test
+    void obtenerHistorialPaginado_ConRangoDeFechas_PropagaLosLimites() {
+        LocalDateTime desde = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime hasta = LocalDateTime.of(2026, 1, 31, 23, 59);
+        Pageable pageable = PageRequest.of(0, 10);
+        when(glucosaRepository.buscarHistorialPaginado(1L, desde, hasta, pageable))
+                .thenReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
+
+        glucosaService.obtenerHistorialPaginado(1L, desde, hasta, pageable);
+
+        verify(glucosaRepository).buscarHistorialPaginado(1L, desde, hasta, pageable);
     }
 
     @Test

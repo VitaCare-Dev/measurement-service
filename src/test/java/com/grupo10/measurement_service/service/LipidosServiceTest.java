@@ -6,12 +6,16 @@ import com.grupo10.measurement_service.exception.BusinessLogicException;
 import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.Lipidos;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.repository.LipidosRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -129,31 +133,52 @@ class LipidosServiceTest {
     }
 
     @Test
-    void obtenerHistorialPorPaciente_IdNulo_LanzaBusinessLogicException() {
-        assertThrows(BusinessLogicException.class, () -> lipidosService.obtenerHistorialPorPaciente(null));
+    void obtenerHistorialPaginado_IdNulo_LanzaBusinessLogicException() {
+        Pageable pageable = PageRequest.of(0, 10);
+        assertThrows(BusinessLogicException.class,
+                () -> lipidosService.obtenerHistorialPaginado(null, null, null, pageable));
     }
 
     @Test
-    void obtenerHistorialPorPaciente_ListaVacia_RetornaVacia() {
-        when(lipidosRepository.findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(1L))
-                .thenReturn(Collections.emptyList());
+    void obtenerHistorialPaginado_SinRegistros_RetornaPaginaVacia() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(lipidosRepository.buscarHistorialPaginado(1L, null, null, pageable))
+                .thenReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
 
-        List<LipidosResponseDto> resultado = lipidosService.obtenerHistorialPorPaciente(1L);
+        PageResponseDto<LipidosResponseDto> resultado =
+                lipidosService.obtenerHistorialPaginado(1L, null, null, pageable);
 
-        assertTrue(resultado.isEmpty());
+        assertTrue(resultado.getContent().isEmpty());
+        assertEquals(0, resultado.getTotalElements());
     }
 
     @Test
-    void obtenerHistorialPorPaciente_ConRegistros_RetornaLista() {
+    void obtenerHistorialPaginado_ConRegistros_RetornaPaginaConContenido() {
         ControlSalud control = crearControl();
         Lipidos lipidos = crearLipidos(control);
-        when(lipidosRepository.findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(1L))
-                .thenReturn(List.of(lipidos));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(lipidosRepository.buscarHistorialPaginado(1L, null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(lipidos), pageable, 1));
 
-        List<LipidosResponseDto> resultado = lipidosService.obtenerHistorialPorPaciente(1L);
+        PageResponseDto<LipidosResponseDto> resultado =
+                lipidosService.obtenerHistorialPaginado(1L, null, null, pageable);
 
-        assertEquals(1, resultado.size());
-        assertEquals(180, resultado.get(0).getColesterolTotal());
+        assertEquals(1, resultado.getContent().size());
+        assertEquals(180, resultado.getContent().get(0).getColesterolTotal());
+        assertEquals(1, resultado.getTotalElements());
+    }
+
+    @Test
+    void obtenerHistorialPaginado_ConRangoDeFechas_PropagaLosLimites() {
+        LocalDateTime desde = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime hasta = LocalDateTime.of(2026, 1, 31, 23, 59);
+        Pageable pageable = PageRequest.of(0, 10);
+        when(lipidosRepository.buscarHistorialPaginado(1L, desde, hasta, pageable))
+                .thenReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
+
+        lipidosService.obtenerHistorialPaginado(1L, desde, hasta, pageable);
+
+        verify(lipidosRepository).buscarHistorialPaginado(1L, desde, hasta, pageable);
     }
 
     @Test

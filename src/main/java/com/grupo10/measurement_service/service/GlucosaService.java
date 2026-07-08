@@ -2,14 +2,18 @@ package com.grupo10.measurement_service.service;
 
 import com.grupo10.measurement_service.dto.GlucosaRequestDto;
 import com.grupo10.measurement_service.dto.GlucosaResponseDto;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.exception.BusinessLogicException;
 import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.Glucosa;
 import com.grupo10.measurement_service.repository.GlucosaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -75,20 +79,25 @@ public class GlucosaService {
     }
 
     /**
-     * Obtiene el historial de mediciones de glucosa de un paciente,
-     * ordenado de más reciente a más antiguo.
+     * Obtiene el historial paginado de mediciones de glucosa de un paciente,
+     * opcionalmente acotado a un rango de fechas.
      *
      * @param idPaciente identificador del paciente
-     * @return lista de mediciones de glucosa; lista vacía si el paciente no tiene registros
+     * @param desde      límite inferior (inclusive) del rango de fechas, o {@code null} para no acotar
+     * @param hasta      límite superior (inclusive) del rango de fechas, o {@code null} para no acotar
+     * @param pageable   página, tamaño y orden solicitados
+     * @return la página de mediciones que cumple los filtros; vacía si el paciente no tiene registros
      * @throws BusinessLogicException si el ID del paciente es nulo
      */
-    public List<GlucosaResponseDto> obtenerHistorialPorPaciente(Long idPaciente) {
+    public PageResponseDto<GlucosaResponseDto> obtenerHistorialPaginado(
+            Long idPaciente, LocalDateTime desde, LocalDateTime hasta, Pageable pageable) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
         }
-        List<Glucosa> historial = glucosaRepository
-                .findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(idPaciente);
-        return historial.stream().map(this::mapearAResponse).toList();
+        Page<Glucosa> pagina = glucosaRepository.buscarHistorialPaginado(idPaciente, desde, hasta, pageable);
+        List<GlucosaResponseDto> contenido = pagina.getContent().stream().map(this::mapearAResponse).toList();
+        return new PageResponseDto<>(
+                contenido, pagina.getNumber(), pagina.getSize(), pagina.getTotalElements(), pagina.getTotalPages());
     }
 
     /**

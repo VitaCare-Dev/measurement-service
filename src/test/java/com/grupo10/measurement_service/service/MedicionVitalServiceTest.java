@@ -6,12 +6,16 @@ import com.grupo10.measurement_service.exception.BusinessLogicException;
 import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.MedicionVitales;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.repository.MedicionVitalesRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -143,31 +147,52 @@ class MedicionVitalServiceTest {
     }
 
     @Test
-    void obtenerHistorialPorPaciente_IdNulo_LanzaBusinessLogicException() {
-        assertThrows(BusinessLogicException.class, () -> medicionVitalService.obtenerHistorialPorPaciente(null));
+    void obtenerHistorialPaginado_IdNulo_LanzaBusinessLogicException() {
+        Pageable pageable = PageRequest.of(0, 10);
+        assertThrows(BusinessLogicException.class,
+                () -> medicionVitalService.obtenerHistorialPaginado(null, null, null, pageable));
     }
 
     @Test
-    void obtenerHistorialPorPaciente_ListaVacia_RetornaVacia() {
-        when(medicionVitalesRepository.findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(1L))
-                .thenReturn(Collections.emptyList());
+    void obtenerHistorialPaginado_SinRegistros_RetornaPaginaVacia() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(medicionVitalesRepository.buscarHistorialPaginado(1L, null, null, pageable))
+                .thenReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
 
-        List<MedicionVitalResponseDto> resultado = medicionVitalService.obtenerHistorialPorPaciente(1L);
+        PageResponseDto<MedicionVitalResponseDto> resultado =
+                medicionVitalService.obtenerHistorialPaginado(1L, null, null, pageable);
 
-        assertTrue(resultado.isEmpty());
+        assertTrue(resultado.getContent().isEmpty());
+        assertEquals(0, resultado.getTotalElements());
     }
 
     @Test
-    void obtenerHistorialPorPaciente_ConRegistros_RetornaLista() {
+    void obtenerHistorialPaginado_ConRegistros_RetornaPaginaConContenido() {
         ControlSalud control = crearControl();
         MedicionVitales vital = crearVital(control);
-        when(medicionVitalesRepository.findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(1L))
-                .thenReturn(List.of(vital));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(medicionVitalesRepository.buscarHistorialPaginado(1L, null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(vital), pageable, 1));
 
-        List<MedicionVitalResponseDto> resultado = medicionVitalService.obtenerHistorialPorPaciente(1L);
+        PageResponseDto<MedicionVitalResponseDto> resultado =
+                medicionVitalService.obtenerHistorialPaginado(1L, null, null, pageable);
 
-        assertEquals(1, resultado.size());
-        assertEquals(120, resultado.get(0).getPresionSistolica());
+        assertEquals(1, resultado.getContent().size());
+        assertEquals(120, resultado.getContent().get(0).getPresionSistolica());
+        assertEquals(1, resultado.getTotalElements());
+    }
+
+    @Test
+    void obtenerHistorialPaginado_ConRangoDeFechas_PropagaLosLimites() {
+        LocalDateTime desde = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime hasta = LocalDateTime.of(2026, 1, 31, 23, 59);
+        Pageable pageable = PageRequest.of(0, 10);
+        when(medicionVitalesRepository.buscarHistorialPaginado(1L, desde, hasta, pageable))
+                .thenReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
+
+        medicionVitalService.obtenerHistorialPaginado(1L, desde, hasta, pageable);
+
+        verify(medicionVitalesRepository).buscarHistorialPaginado(1L, desde, hasta, pageable);
     }
 
     @Test

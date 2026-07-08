@@ -5,14 +5,17 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.grupo10.measurement_service.dto.GlucosaRequestDto;
 import com.grupo10.measurement_service.dto.GlucosaResponseDto;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.model.PeriodoGlucosa;
 import com.grupo10.measurement_service.service.GlucosaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,7 +24,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -46,6 +52,8 @@ class GlucosaControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(glucosaController)
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .setCustomArgumentResolvers(
+                        new org.springframework.data.web.PageableHandlerMethodArgumentResolver())
                 .build();
     }
 
@@ -88,13 +96,41 @@ class GlucosaControllerTest {
     }
 
     @Test
-    void obtenerHistorialPorPaciente_RetornaOk() throws Exception {
-        when(glucosaService.obtenerHistorialPorPaciente(1L)).thenReturn(List.of(crearResponse()));
+    void obtenerHistorialPorPaciente_SinFiltros_RetornaOk() throws Exception {
+        PageResponseDto<GlucosaResponseDto> pagina =
+                new PageResponseDto<>(List.of(crearResponse()), 0, 10, 1, 1);
+        when(glucosaService.obtenerHistorialPaginado(eq(1L), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(pagina);
 
         mockMvc.perform(get("/api/glucose/patient/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].idControl").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        verify(glucosaService).obtenerHistorialPaginado(eq(1L), isNull(), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    void obtenerHistorialPorPaciente_ConRangoDeFechas_ConvierteALocalDateTime() throws Exception {
+        PageResponseDto<GlucosaResponseDto> pagina =
+                new PageResponseDto<>(List.of(crearResponse()), 0, 10, 1, 1);
+        when(glucosaService.obtenerHistorialPaginado(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class),
+                any(Pageable.class)))
+                .thenReturn(pagina);
+
+        mockMvc.perform(get("/api/glucose/patient/1")
+                        .param("desde", "2026-01-01")
+                        .param("hasta", "2026-01-31")
+                        .param("page", "0")
+                        .param("size", "5"))
                 .andExpect(status().isOk());
 
-        verify(glucosaService).obtenerHistorialPorPaciente(1L);
+        ArgumentCaptor<LocalDateTime> desdeCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+        ArgumentCaptor<LocalDateTime> hastaCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(glucosaService).obtenerHistorialPaginado(
+                eq(1L), desdeCaptor.capture(), hastaCaptor.capture(), any(Pageable.class));
+        assertEquals(LocalDateTime.of(2026, 1, 1, 0, 0), desdeCaptor.getValue());
+        assertEquals(LocalDateTime.of(2026, 1, 31, 23, 59, 59, 999_999_999), hastaCaptor.getValue());
     }
 
     @Test

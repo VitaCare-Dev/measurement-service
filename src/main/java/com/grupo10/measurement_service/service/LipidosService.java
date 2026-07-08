@@ -2,14 +2,18 @@ package com.grupo10.measurement_service.service;
 
 import com.grupo10.measurement_service.dto.LipidosRequestDto;
 import com.grupo10.measurement_service.dto.LipidosResponseDto;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.exception.BusinessLogicException;
 import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.Lipidos;
 import com.grupo10.measurement_service.repository.LipidosRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -82,20 +86,25 @@ public class LipidosService {
     }
 
     /**
-     * Obtiene el historial de perfiles lipídicos de un paciente,
-     * ordenado de más reciente a más antiguo.
+     * Obtiene el historial paginado de perfiles lipídicos de un paciente,
+     * opcionalmente acotado a un rango de fechas.
      *
      * @param idPaciente identificador del paciente
-     * @return lista de perfiles lipídicos; lista vacía si el paciente no tiene registros
+     * @param desde      límite inferior (inclusive) del rango de fechas, o {@code null} para no acotar
+     * @param hasta      límite superior (inclusive) del rango de fechas, o {@code null} para no acotar
+     * @param pageable   página, tamaño y orden solicitados
+     * @return la página de perfiles que cumple los filtros; vacía si el paciente no tiene registros
      * @throws BusinessLogicException si el ID del paciente es nulo
      */
-    public List<LipidosResponseDto> obtenerHistorialPorPaciente(Long idPaciente) {
+    public PageResponseDto<LipidosResponseDto> obtenerHistorialPaginado(
+            Long idPaciente, LocalDateTime desde, LocalDateTime hasta, Pageable pageable) {
         if (idPaciente == null) {
             throw new BusinessLogicException("El ID del paciente es obligatorio");
         }
-        List<Lipidos> historial = lipidosRepository
-                .findByControlSalud_IdPacienteOrderByControlSalud_FechaHoraDesc(idPaciente);
-        return historial.stream().map(this::mapearAResponse).toList();
+        Page<Lipidos> pagina = lipidosRepository.buscarHistorialPaginado(idPaciente, desde, hasta, pageable);
+        List<LipidosResponseDto> contenido = pagina.getContent().stream().map(this::mapearAResponse).toList();
+        return new PageResponseDto<>(
+                contenido, pagina.getNumber(), pagina.getSize(), pagina.getTotalElements(), pagina.getTotalPages());
     }
 
     /**

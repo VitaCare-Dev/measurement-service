@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.grupo10.measurement_service.dto.LipidosRequestDto;
 import com.grupo10.measurement_service.dto.LipidosResponseDto;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.service.LipidosService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -45,6 +49,8 @@ class LipidosControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(lipidosController)
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .setCustomArgumentResolvers(
+                        new org.springframework.data.web.PageableHandlerMethodArgumentResolver())
                 .build();
     }
 
@@ -91,13 +97,35 @@ class LipidosControllerTest {
     }
 
     @Test
-    void obtenerHistorialPorPaciente_RetornaOk() throws Exception {
-        when(lipidosService.obtenerHistorialPorPaciente(1L)).thenReturn(List.of(crearResponse()));
+    void obtenerHistorialPorPaciente_SinFiltros_RetornaOk() throws Exception {
+        PageResponseDto<LipidosResponseDto> pagina =
+                new PageResponseDto<>(List.of(crearResponse()), 0, 10, 1, 1);
+        when(lipidosService.obtenerHistorialPaginado(eq(1L), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(pagina);
 
         mockMvc.perform(get("/api/lipids/patient/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].idControl").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        verify(lipidosService).obtenerHistorialPaginado(eq(1L), isNull(), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    void obtenerHistorialPorPaciente_ConRangoDeFechas_ConvierteALocalDateTime() throws Exception {
+        PageResponseDto<LipidosResponseDto> pagina =
+                new PageResponseDto<>(List.of(crearResponse()), 0, 10, 1, 1);
+        when(lipidosService.obtenerHistorialPaginado(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class),
+                any(Pageable.class)))
+                .thenReturn(pagina);
+
+        mockMvc.perform(get("/api/lipids/patient/1")
+                        .param("desde", "2026-01-01")
+                        .param("hasta", "2026-01-31"))
                 .andExpect(status().isOk());
 
-        verify(lipidosService).obtenerHistorialPorPaciente(1L);
+        verify(lipidosService).obtenerHistorialPaginado(
+                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class));
     }
 
     @Test

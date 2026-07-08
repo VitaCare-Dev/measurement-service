@@ -2,12 +2,19 @@ package com.grupo10.measurement_service.controller;
 
 import com.grupo10.measurement_service.dto.MedicionVitalRequestDto;
 import com.grupo10.measurement_service.dto.MedicionVitalResponseDto;
+import com.grupo10.measurement_service.dto.PageResponseDto;
 import com.grupo10.measurement_service.service.MedicionVitalService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * Controlador REST para la gestión de mediciones de signos vitales.
@@ -49,15 +56,27 @@ public class MedicionVitalController {
     }
 
     /**
-     * Obtiene el historial completo de signos vitales de un paciente,
-     * ordenado de más reciente a más antiguo.
+     * Obtiene el historial paginado de signos vitales de un paciente,
+     * ordenado de más reciente a más antiguo, opcionalmente acotado a un
+     * rango de fechas.
      *
      * @param idPaciente identificador del paciente
-     * @return lista de mediciones vitales del paciente con estado HTTP 200 OK
+     * @param desde      fecha inicial (inclusive) del rango a consultar, en formato {@code yyyy-MM-dd}
+     * @param hasta      fecha final (inclusive) del rango a consultar, en formato {@code yyyy-MM-dd}
+     * @param pageable   número de página y tamaño solicitados (parámetros {@code page}/{@code size})
+     * @return la página de mediciones vitales del paciente con estado HTTP 200 OK
      */
     @GetMapping("/patient/{idPaciente}")
-    public ResponseEntity<List<MedicionVitalResponseDto>> obtenerHistorialPorPaciente(@PathVariable Long idPaciente) {
-        return ResponseEntity.ok(medicionVitalService.obtenerHistorialPorPaciente(idPaciente));
+    public ResponseEntity<PageResponseDto<MedicionVitalResponseDto>> obtenerHistorialPorPaciente(
+            @PathVariable Long idPaciente,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @PageableDefault(size = 10, sort = "controlSalud.fechaHora", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        LocalDateTime desdeInicioDia = desde != null ? desde.atStartOfDay() : null;
+        LocalDateTime hastaFinDia = hasta != null ? hasta.atTime(LocalTime.MAX) : null;
+        return ResponseEntity.ok(
+                medicionVitalService.obtenerHistorialPaginado(idPaciente, desdeInicioDia, hastaFinDia, pageable));
     }
 
     /**
