@@ -98,6 +98,13 @@ class LipidosServiceTest {
     }
 
     @Test
+    void registrarLipidos_ColesterolTotalSobreElMaximoPlausible_LanzaBusinessLogicException() {
+        LipidosRequestDto request = crearRequest();
+        request.setColesterolTotal(99999);
+        assertThrows(BusinessLogicException.class, () -> lipidosService.registrarLipidos(request));
+    }
+
+    @Test
     void registrarLipidos_DatosValidos_RetornaResponse() {
         LipidosRequestDto request = crearRequest();
         ControlSalud control = crearControl();

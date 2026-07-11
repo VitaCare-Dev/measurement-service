@@ -112,6 +112,38 @@ class MedicionVitalServiceTest {
     }
 
     @Test
+    void registrarMedicionVital_AmbasPresionesNulas_NoLanzaExcepcionYRegistraSinPresion() {
+        MedicionVitalRequestDto request = crearRequest();
+        request.setPresionSistolica(null);
+        request.setPresionDiastolica(null);
+
+        ControlSalud control = crearControl();
+        MedicionVitales vital = new MedicionVitales();
+        vital.setIdControl(1L);
+        vital.setPresionSistolica(null);
+        vital.setPresionDiastolica(null);
+        vital.setTemperatura(36.5);
+        vital.setPeso(72.3);
+        vital.setControlSalud(control);
+
+        when(controlSaludService.crearControl(1L, "nota")).thenReturn(control);
+        when(medicionVitalesRepository.save(any(MedicionVitales.class))).thenReturn(vital);
+
+        MedicionVitalResponseDto response = medicionVitalService.registrarMedicionVital(request);
+
+        assertNotNull(response);
+        assertNull(response.getPresionSistolica());
+        assertNull(response.getPresionDiastolica());
+    }
+
+    @Test
+    void registrarMedicionVital_PresionSistolicaSobreElMaximoPlausible_LanzaBusinessLogicException() {
+        MedicionVitalRequestDto request = crearRequest();
+        request.setPresionSistolica(99999);
+        assertThrows(BusinessLogicException.class, () -> medicionVitalService.registrarMedicionVital(request));
+    }
+
+    @Test
     void registrarMedicionVital_DatosValidos_RetornaResponse() {
         MedicionVitalRequestDto request = crearRequest();
         ControlSalud control = crearControl();

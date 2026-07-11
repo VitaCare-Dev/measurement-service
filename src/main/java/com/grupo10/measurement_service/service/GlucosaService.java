@@ -8,6 +8,7 @@ import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.Glucosa;
 import com.grupo10.measurement_service.repository.GlucosaRepository;
+import com.grupo10.measurement_service.utils.RangosMedicionValidos;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,8 +44,10 @@ public class GlucosaService {
      */
     @Transactional
     public GlucosaResponseDto registrarGlucosa(GlucosaRequestDto request) {
-        if (request.getGlucosa() <= 0) {
-            throw new BusinessLogicException("El nivel de glucosa debe ser mayor que cero");
+        if (request.getGlucosa() < RangosMedicionValidos.GLUCOSA_MIN
+                || request.getGlucosa() > RangosMedicionValidos.GLUCOSA_MAX) {
+            throw new BusinessLogicException("El nivel de glucosa debe estar entre "
+                    + RangosMedicionValidos.GLUCOSA_MIN + " y " + RangosMedicionValidos.GLUCOSA_MAX + " mg/dL");
         }
         if (request.getPeriodo() == null) {
             throw new BusinessLogicException("El periodo de medición es obligatorio. Valores válidos: AYUNAS, POSTPRANDIAL, NOCTURNA, ALEATORIO");

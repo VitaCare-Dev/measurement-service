@@ -8,6 +8,7 @@ import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.Lipidos;
 import com.grupo10.measurement_service.repository.LipidosRepository;
+import com.grupo10.measurement_service.utils.RangosMedicionValidos;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,17 +43,29 @@ public class LipidosService {
      */
     @Transactional
     public LipidosResponseDto registrarLipidos(LipidosRequestDto request) {
-        if (request.getColesterolTotal() <= 0) {
-            throw new BusinessLogicException("El colesterol total debe ser mayor que cero");
+        if (request.getColesterolTotal() < RangosMedicionValidos.COLESTEROL_TOTAL_MIN
+                || request.getColesterolTotal() > RangosMedicionValidos.COLESTEROL_TOTAL_MAX) {
+            throw new BusinessLogicException("El colesterol total debe estar entre "
+                    + RangosMedicionValidos.COLESTEROL_TOTAL_MIN + " y " + RangosMedicionValidos.COLESTEROL_TOTAL_MAX
+                    + " mg/dL");
         }
-        if (request.getColesterolLDL() <= 0) {
-            throw new BusinessLogicException("El colesterol LDL debe ser mayor que cero");
+        if (request.getColesterolLDL() < RangosMedicionValidos.COLESTEROL_LDL_MIN
+                || request.getColesterolLDL() > RangosMedicionValidos.COLESTEROL_LDL_MAX) {
+            throw new BusinessLogicException("El colesterol LDL debe estar entre "
+                    + RangosMedicionValidos.COLESTEROL_LDL_MIN + " y " + RangosMedicionValidos.COLESTEROL_LDL_MAX
+                    + " mg/dL");
         }
-        if (request.getColesterolHDL() <= 0) {
-            throw new BusinessLogicException("El colesterol HDL debe ser mayor que cero");
+        if (request.getColesterolHDL() < RangosMedicionValidos.COLESTEROL_HDL_MIN
+                || request.getColesterolHDL() > RangosMedicionValidos.COLESTEROL_HDL_MAX) {
+            throw new BusinessLogicException("El colesterol HDL debe estar entre "
+                    + RangosMedicionValidos.COLESTEROL_HDL_MIN + " y " + RangosMedicionValidos.COLESTEROL_HDL_MAX
+                    + " mg/dL");
         }
-        if (request.getTrigliceridos() <= 0) {
-            throw new BusinessLogicException("Los triglicéridos deben ser mayores que cero");
+        if (request.getTrigliceridos() < RangosMedicionValidos.TRIGLICERIDOS_MIN
+                || request.getTrigliceridos() > RangosMedicionValidos.TRIGLICERIDOS_MAX) {
+            throw new BusinessLogicException("Los triglicéridos deben estar entre "
+                    + RangosMedicionValidos.TRIGLICERIDOS_MIN + " y " + RangosMedicionValidos.TRIGLICERIDOS_MAX
+                    + " mg/dL");
         }
 
         ControlSalud controlPadre = controlSaludService.crearControl(

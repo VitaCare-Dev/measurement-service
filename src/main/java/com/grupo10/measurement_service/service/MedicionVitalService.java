@@ -8,6 +8,7 @@ import com.grupo10.measurement_service.exception.ResourceNotFoundException;
 import com.grupo10.measurement_service.model.ControlSalud;
 import com.grupo10.measurement_service.model.MedicionVitales;
 import com.grupo10.measurement_service.repository.MedicionVitalesRepository;
+import com.grupo10.measurement_service.utils.RangosMedicionValidos;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,23 +38,48 @@ public class MedicionVitalService {
      * Registra una nueva medición de signos vitales para un paciente.
      * Crea un control de salud padre antes de persistir la medición.
      *
-     * @param request datos de la medición incluyendo presión sistólica, diastólica, temperatura y peso
+     * @param request datos de la medición incluyendo presión sistólica, diastólica, temperatura y peso.
+     *                La presión arterial es opcional, pero si se informa una de sus dos componentes
+     *                (sistólica/diastólica) debe informarse también la otra.
      * @return la medición registrada como DTO de respuesta
-     * @throws BusinessLogicException si cualquier valor es nulo o menor o igual a cero
+     * @throws BusinessLogicException si la presión viene incompleta (solo sistólica o solo diastólica),
+     *                                 si algún valor informado está fuera de un rango médicamente
+     *                                 plausible, o si la temperatura/peso son nulos o inválidos
      */
     @Transactional
     public MedicionVitalResponseDto registrarMedicionVital(MedicionVitalRequestDto request) {
-        if (request.getPresionSistolica() == null || request.getPresionSistolica() <= 0) {
-            throw new BusinessLogicException("La presión sistólica debe ser mayor que cero");
+        boolean tieneSistolica = request.getPresionSistolica() != null;
+        boolean tieneDiastolica = request.getPresionDiastolica() != null;
+
+        if (tieneSistolica != tieneDiastolica) {
+            throw new BusinessLogicException(
+                    "Debes registrar tanto la presión sistólica como la diastólica, o dejar ambas vacías");
         }
-        if (request.getPresionDiastolica() == null || request.getPresionDiastolica() <= 0) {
-            throw new BusinessLogicException("La presión diastólica debe ser mayor que cero");
+
+        if (tieneSistolica) {
+            if (request.getPresionSistolica() < RangosMedicionValidos.PRESION_SISTOLICA_MIN
+                    || request.getPresionSistolica() > RangosMedicionValidos.PRESION_SISTOLICA_MAX) {
+                throw new BusinessLogicException("La presión sistólica debe estar entre "
+                        + RangosMedicionValidos.PRESION_SISTOLICA_MIN + " y "
+                        + RangosMedicionValidos.PRESION_SISTOLICA_MAX + " mmHg");
+            }
+            if (request.getPresionDiastolica() < RangosMedicionValidos.PRESION_DIASTOLICA_MIN
+                    || request.getPresionDiastolica() > RangosMedicionValidos.PRESION_DIASTOLICA_MAX) {
+                throw new BusinessLogicException("La presión diastólica debe estar entre "
+                        + RangosMedicionValidos.PRESION_DIASTOLICA_MIN + " y "
+                        + RangosMedicionValidos.PRESION_DIASTOLICA_MAX + " mmHg");
+            }
         }
-        if (request.getTemperatura() <= 0) {
-            throw new BusinessLogicException("La temperatura debe ser mayor que cero");
+
+        if (request.getTemperatura() < RangosMedicionValidos.TEMPERATURA_MIN
+                || request.getTemperatura() > RangosMedicionValidos.TEMPERATURA_MAX) {
+            throw new BusinessLogicException("La temperatura debe estar entre "
+                    + RangosMedicionValidos.TEMPERATURA_MIN + " y " + RangosMedicionValidos.TEMPERATURA_MAX + " °C");
         }
-        if (request.getPeso() <= 0) {
-            throw new BusinessLogicException("El peso debe ser mayor que cero");
+        if (request.getPeso() < RangosMedicionValidos.PESO_MIN
+                || request.getPeso() > RangosMedicionValidos.PESO_MAX) {
+            throw new BusinessLogicException("El peso debe estar entre "
+                    + RangosMedicionValidos.PESO_MIN + " y " + RangosMedicionValidos.PESO_MAX + " kg");
         }
 
         ControlSalud controlPadre = controlSaludService.crearControl(

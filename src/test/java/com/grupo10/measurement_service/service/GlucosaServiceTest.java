@@ -65,6 +65,14 @@ class GlucosaServiceTest {
     }
 
     @Test
+    void registrarGlucosa_GlucosaSobreElMaximoPlausible_LanzaBusinessLogicException() {
+        GlucosaRequestDto request = new GlucosaRequestDto();
+        request.setGlucosa(99999);
+        request.setPeriodo(PeriodoGlucosa.AYUNAS);
+        assertThrows(BusinessLogicException.class, () -> glucosaService.registrarGlucosa(request));
+    }
+
+    @Test
     void registrarGlucosa_PeriodoNulo_LanzaBusinessLogicException() {
         GlucosaRequestDto request = new GlucosaRequestDto();
         request.setGlucosa(95);

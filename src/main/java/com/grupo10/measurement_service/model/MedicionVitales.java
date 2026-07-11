@@ -26,10 +26,10 @@ public class MedicionVitales {
     private Long idControl;
 
     @Column(name = "presion_sistolica")
-    private int presionSistolica;
+    private Integer presionSistolica;
 
     @Column(name = "presion_diastolica")
-    private int presionDiastolica;
+    private Integer presionDiastolica;
 
     @Column(name = "temperatura")
     private double temperatura;
